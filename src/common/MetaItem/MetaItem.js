@@ -13,8 +13,10 @@ const useBinaryState = require('stremio/common/useBinaryState');
 const { ICON_FOR_TYPE } = require('stremio/common/CONSTANTS');
 const styles = require('./styles');
 
-const MetaItem = React.memo(({ className, type, name, poster, posterShape, posterChangeCursor, progress, newVideos, options, deepLinks, dataset, optionOnSelect, onDismissClick, onPlayClick, ...props }) => {
+const MetaItem = React.memo(({ className, type, name, poster, posterShape, posterChangeCursor, progress, newVideos, options, deepLinks, dataset, optionOnSelect, onDismissClick, onPlayClick, trailerStreams, ...props }) => {
     const { t } = useTranslation();
+    const [hovering, setHovering] = React.useState(false);
+    let hoverDelay = false;
     const [menuOpen, onMenuOpen, onMenuClose] = useBinaryState(false);
     const href = React.useMemo(() => {
         return deepLinks ?
@@ -63,9 +65,25 @@ const MetaItem = React.memo(({ className, type, name, poster, posterShape, poste
     const renderMenuLabelContent = React.useCallback(() => (
         <Icon className={styles['icon']} name={'more-vertical'} />
     ), []);
+    
+    const handleMouseEnter = () => {
+        console.log('enter');
+        hoverDelay = true;
+        setTimeout(() => {
+            if(hoverDelay === true){
+                setHovering(true)
+            }
+        }, 3000)
+        
+    };
+    const handleMouseLeave = () => {
+        hoverDelay = false
+        setHovering(false);
+    };
+
     return (
         <Button title={name} href={href} {...filterInvalidDOMProps(props)} className={classnames(className, styles['meta-item-container'], styles['poster-shape-poster'], styles[`poster-shape-${posterShape}`], { 'active': menuOpen })} onClick={metaItemOnClick}>
-            <div className={classnames(styles['poster-container'], { 'poster-change-cursor': posterChangeCursor })}>
+            <div className={classnames( hovering && styles['trailer-preview'], styles['poster-container'], { 'poster-change-cursor': posterChangeCursor } )}>
                 {
                     onDismissClick ?
                         <div title={t('LIBRARY_RESUME_DISMISS')} className={styles['dismiss-icon-layer']} onClick={onDismissClick}>
@@ -75,13 +93,23 @@ const MetaItem = React.memo(({ className, type, name, poster, posterShape, poste
                         :
                         null
                 }
-                <div className={styles['poster-image-layer']}>
-                    <Image
-                        className={styles['poster-image']}
-                        src={poster}
-                        alt={' '}
-                        renderFallback={renderPosterFallback}
-                    />
+                <div className={styles['poster-image-layer']}  onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                    {hovering && trailerStreams ? (
+                        <iframe
+                            id="ytplayer"
+                            type="text/html"
+                            width="540"
+                            height="360"
+                            src={`https://www.youtube.com/embed/${trailerStreams[0]?.ytId}?autoplay=1&mute=1`}
+                        />
+                        ) : (
+                        <Image
+                            className={styles['poster-image']}
+                            src={poster}
+                            alt={' '}
+                            renderFallback={renderPosterFallback}
+                        />
+                    )}
                 </div>
                 {
                     onPlayClick ?
